@@ -1,0 +1,68 @@
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# Replace with your file path
+file_path = 'LOLdata.xlsx'
+
+# Read Excel file
+df = pd.read_excel(file_path)
+
+# Get Rank categories
+rank_categories = df['Rank'].unique()
+
+# Calculate the number of rows for subplots, one for each Rank category
+num_rows = len(rank_categories)
+
+# Create layout for subplots, set shared_xaxes to False
+fig = make_subplots(rows=num_rows, cols=1, shared_xaxes=False, vertical_spacing=0.02, subplot_titles=rank_categories)
+
+# For each category
+for i, category in enumerate(rank_categories, start=1):
+    category_data = df[df['Rank'] == category]
+
+    # Initialize list to store impact values
+    feature_names = ['First Baron', 'First Herald', 'First Tower', 'First Inhib'] + [f'# Dragons {level}' for level in range(7)]
+    feature_values = []
+
+    # Calculate impact values for First Baron, First Herald, First Tower, First Inhib
+    for feature in feature_names[:4]:
+        total_true = category_data[category_data[feature] == True].shape[0]
+        total_win = category_data[(category_data[feature] == True) & (category_data['Win'] == True)].shape[0]
+        impact_value = total_win / total_true if total_true > 0 else 0
+        feature_values.append(impact_value)
+
+    # Calculate impact values for # Dragons from 0 to 6
+    for level in range(7):
+        total_at_level = category_data[category_data['# Dragons'] == level].shape[0]
+        wins_at_level = category_data[(category_data['# Dragons'] == level) & (category_data['Win'] == True)].shape[0]
+        impact_value = wins_at_level / total_at_level if total_at_level > 0 else 0
+        feature_values.append(impact_value)
+
+    # Add calculated impact values to the subplot
+    fig.add_trace(go.Bar(
+        x=feature_values,
+        y=feature_names,
+        orientation='h',
+        name=category
+    ), row=i, col=1)
+
+# Update layout
+fig.update_layout(
+    height=300 * num_rows,  # Dynamically adjust the height based on the number of categories
+    showlegend=False,  # Hide legend
+    title_text='Rank Category Impact Values',
+)
+
+# Set x-axis title, range, and ticks for each subplot
+for i in range(num_rows):
+    fig.update_xaxes(
+        range=[0, 1],
+        tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
+        ticktext=['0', '0.2', '0.4', '0.6', '0.8', '1'],
+        row=i,
+        col=1
+    )
+
+# Display the figure
+fig.show()
