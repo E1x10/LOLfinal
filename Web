@@ -1,27 +1,44 @@
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import base64
+from pathlib import Path
 
-# Replace with your file path
-file_path = 'LOLdata.xlsx'
+# Helper function to convert an image file to a Base64 encoded string
+def encode_image(image_path):
+    # Read the image file and encode it
+    encoded = base64.b64encode(Path(image_path).read_bytes()).decode()
+    return f'data:image/jpg;base64,{encoded}'
 
-# Read Excel file
-df = pd.read_excel(file_path)
+# Replace with the path of your background image files
+background_image_path1 = '02.png'
 
-# Get Rank categories
+
+# Encode the background images
+encoded_image1 = encode_image(background_image_path1)
+
+
+# Replace with the path of your Excel file
+excel_file_path = 'LOLdata.xlsx'
+
+# Read the Excel file
+df = pd.read_excel(excel_file_path)
+
+# Get the unique Rank categories
 rank_categories = df['Rank'].unique()
 
 # Calculate the number of rows for subplots, one for each Rank category
 num_rows = len(rank_categories)
 
-# Create layout for subplots, set shared_xaxes to False
+# Create the layout for the subplots, setting shared_xaxes to False
 fig = make_subplots(rows=num_rows, cols=1, shared_xaxes=False, vertical_spacing=0.02, subplot_titles=rank_categories)
 
+# Example showing how to add data to the chart
 # For each category
 for i, category in enumerate(rank_categories, start=1):
     category_data = df[df['Rank'] == category]
 
-    # Initialize list to store impact values
+    # Initialize a list to store impact values
     feature_names = ['First Baron', 'First Herald', 'First Tower', 'First Inhib'] + [f'# Dragons {level}' for level in range(7)]
     feature_values = []
 
@@ -39,7 +56,7 @@ for i, category in enumerate(rank_categories, start=1):
         impact_value = wins_at_level / total_at_level if total_at_level > 0 else 0
         feature_values.append(impact_value)
 
-    # Add calculated impact values to the subplot
+    # Add the calculated impact values to the subplot
     fig.add_trace(go.Bar(
         x=feature_values,
         y=feature_names,
@@ -47,22 +64,36 @@ for i, category in enumerate(rank_categories, start=1):
         name=category
     ), row=i, col=1)
 
-# Update layout
+    # Add a background image to the subplot
+    fig.add_layout_image(
+        dict(
+            source=encoded_image1,
+            xref="paper", yref="paper",
+            x=0, y=1,
+            sizex=1, sizey=1,
+            sizing="stretch",
+            opacity=0.08,
+            layer="below"
+        )
+    )
+
+# Update the layout settings of the chart
 fig.update_layout(
     height=300 * num_rows,  # Dynamically adjust the height based on the number of categories
-    showlegend=False,  # Hide legend
-    title_text='Rank Category Impact Values',
+    showlegend=False,  # Hide the legend
+    title_text='Objectives Impact on Win Rate (Rank)'
 )
 
-# Set x-axis title, range, and ticks for each subplot
+# Set the X-axis title, range, and ticks for each subplot
 for i in range(num_rows):
     fig.update_xaxes(
         range=[0, 1],
         tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1],
         ticktext=['0', '0.2', '0.4', '0.6', '0.8', '1'],
-        row=i,
+        row=i + 1,
         col=1
     )
 
-# Display the figure
+# Display the chart
 fig.show()
+
